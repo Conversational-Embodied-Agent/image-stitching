@@ -380,10 +380,10 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Stitch images')
-    parser.add_argument('--folder', type=str, help='Folder path containing images', default='./acquisitions')
+    parser.add_argument('--folder', type=str, help='Folder path containing images', default='/home/g/gajdosech2/icup/sequence1')
     parser.add_argument('--crop', default=False, action=argparse.BooleanOptionalAction, help='Crop the panorama to remove black borders')
-    parser.add_argument('--blend', default=False, action=argparse.BooleanOptionalAction, help='Blend the images')
-    parser.add_argument('--showsteps', default=False, action=argparse.BooleanOptionalAction, help='Show the steps of the panorama process')
+    parser.add_argument('--blend', default=True, action=argparse.BooleanOptionalAction, help='Blend the images')
+    parser.add_argument('--showsteps', default=True, action=argparse.BooleanOptionalAction, help='Show the steps of the panorama process')
 
 
 
