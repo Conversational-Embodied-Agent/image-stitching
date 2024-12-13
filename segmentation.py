@@ -3,16 +3,18 @@ import cv2
 import json
 import random
 import open3d as o3d
-import matplotlib.pyplot as plt
+
+IMG_WIDTH = 640
+IMG_HEIGHT = 480
+PANORAMA_WIDTH = 1300
+PANORAMA_HEIGHT = 480
 
 FX = 400
 FY = 400
 CX = 320.0
 CY = 240.0 
-PANORAMA_WIDTH = 1300
-PANORAMA_HEIGHT = 480
-IMAGE_WIDTH = 640
-IMAGE_HEIGHT = 480
+
+OUT_WORK_DIR = ''
 
 
 def apply_mask_and_sample(panorama, mask, log_data):
@@ -31,7 +33,7 @@ def process_depth_and_create_pointcloud(depth_path, image_pixels):
     depth_image = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED)
     masked_depth = cv2.bitwise_and(depth_image, depth_image, mask=image_pixels)
 
-    cv2.imwrite("masked_depth.jpg", masked_depth)
+    cv2.imwrite(OUT_WORK_DIR + 'masked_depth.jpg', masked_depth)
 
     point_cloud = []
     for y in range(depth_image.shape[0]):
@@ -50,11 +52,11 @@ def process_depth_and_create_pointcloud(depth_path, image_pixels):
     o3d.visualization.draw_geometries([o3d_cloud])
 
 
-if __name__ == "__main__":
-    panorama_path = "/home/g/gajdosech2/image-stitching-supeglue/rgb_panorama.jpg"
-    mask_path = "/home/g/gajdosech2/image-stitching-supeglue/mask_0.png"
-    log_file_path = "/home/g/gajdosech2/image-stitching-supeglue/panorama_pixel_log.json"
-    depths_folder = "/home/g/gajdosech2/image-stitching-supeglue/depths/"
+if __name__ == '__main__':
+    panorama_path = '/home/g/gajdosech2/image-stitching-supeglue/rgb_panorama.jpg'
+    mask_path = '/home/g/gajdosech2/image-stitching-supeglue/mask_0.png'
+    log_file_path = '/home/g/gajdosech2/image-stitching-supeglue/panorama_pixel_log.json'
+    depths_folder = '/home/g/gajdosech2/image-stitching-supeglue/depths/'
 
     with open(log_file_path, 'r') as log_file:
         log_data = json.load(log_file)
@@ -63,23 +65,20 @@ if __name__ == "__main__":
     mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
 
     log_entry, masked_panorama = apply_mask_and_sample(panorama, mask, log_data)
-    plt.imshow(cv2.cvtColor(masked_panorama, cv2.COLOR_BGR2RGB))
-    plt.title("Masked Panorama")
-    plt.show()
-    cv2.imwrite("masked_panorama.jpg", masked_panorama)
+    cv2.imwrite(OUT_WORK_DIR + 'masked_panorama.jpg', masked_panorama)
 
-    image_pixels = np.zeros((IMAGE_HEIGHT, IMAGE_WIDTH), dtype=np.uint8)
+    image_pixels = np.zeros((IMG_HEIGHT, IMG_WIDTH), dtype=np.uint8)
     for x in range(0, masked_panorama.shape[1]):
         for y in range(0, masked_panorama.shape[0]):
             rgb_value = np.sum(masked_panorama[y, x])
             if rgb_value:
                 log_index = y * PANORAMA_WIDTH + x
-                image_x = int(log_data[log_index]["image_x"])
-                image_y = int(log_data[log_index]["image_y"])
+                image_x = int(log_data[log_index]['image_x'])
+                image_y = int(log_data[log_index]['image_y'])
                 image_pixels[image_y, image_x] = 1
 
-    cv2.imwrite("hmm.jpg", image_pixels * 255)
+    cv2.imwrite(OUT_WORK_DIR + 'image_pixels.jpg', image_pixels * 255)
 
-    depth_path = f"{depths_folder}/{log_entry['filename']}"
+    depth_path = f'{depths_folder}/{log_entry['filename']}'
 
     process_depth_and_create_pointcloud(depth_path, image_pixels)

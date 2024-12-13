@@ -1,4 +1,7 @@
-
+*.pt
+panorama_pixel_log.json
+masks/
+depths/
 data/skeletex
 
 acquisitions/*
