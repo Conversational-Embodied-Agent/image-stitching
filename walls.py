@@ -51,7 +51,10 @@ def find_valls(images_folder, data_log_path, angles_log_path, wall_log_file, M=1
             continue
 
         timestamp = image_info['timestamp']
-        closest_yaw = find_closest_angle(timestamp, angles_data)['yaw']
+        closest_angle = find_closest_angle(timestamp, angles_data)
+        if abs(closest_angle['pitch']) > 10:
+            continue
+        closest_yaw = closest_angle['yaw']
 
         if abs(closest_yaw + 60) < abs(angles[0] + 60):
             angles[0] = closest_yaw
@@ -97,12 +100,12 @@ def find_valls(images_folder, data_log_path, angles_log_path, wall_log_file, M=1
         o3d_cloud = depth_to_pointcloud(depth, CX, CY, FX, FY)
         plane_model, inliers = o3d_cloud.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
         a, b, c, d = plane_model
-        wall_coords.append(d)
+        wall_coords.append([a, b, c, d])
 
         inlier_cloud = o3d_cloud.select_by_index(inliers)
 
         coords = np.asarray(inlier_cloud.points)
-        wall_coords.append(coords[:3].tolist())
+        wall_coords.append(coords[0].tolist())
 
     print(wall_coords)
     with open(wall_log_file, 'w') as log_file:
