@@ -6,8 +6,8 @@ import open3d as o3d
 
 IMG_WIDTH = 640
 IMG_HEIGHT = 480
-PANORAMA_WIDTH = 1300
-PANORAMA_HEIGHT = 480
+PANORAMA_WIDTH = 1700
+PANORAMA_HEIGHT = 800
 
 FX = 400
 FY = 400
@@ -29,7 +29,7 @@ def apply_mask_and_sample(panorama, mask, log_data):
     log_entry = log_data[px_y * PANORAMA_WIDTH + px_x]
     return log_entry, masked_panorama
 
-def process_depth_and_create_pointcloud(depth_path, image_pixels):
+def process_depth_and_create_pointcloud(depth_path, image_pixels, scaling_matrix=None):
     depth_image = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED)
     masked_depth = cv2.bitwise_and(depth_image, depth_image, mask=image_pixels)
 
@@ -49,12 +49,32 @@ def process_depth_and_create_pointcloud(depth_path, image_pixels):
     o3d_cloud = o3d.geometry.PointCloud()
     o3d_cloud.points = o3d.utility.Vector3dVector(point_cloud)
 
+    if scaling_matrix is not None:
+        o3d_cloud = o3d_cloud.transform(scaling_matrix)
+
     o3d.visualization.draw_geometries([o3d_cloud])
+    return o3d_cloud
+
+def fit_cuboid(cube_cloud):
+    aabb = cube_cloud.get_axis_aligned_bounding_box()
+
+    extent = aabb.get_extent()
+    print("AABB extents:", extent)
+
+    target_size = 5
+    scaling_factors = [target_size / size if size != 0 else 1 for size in extent]
+    print("Scaling factors for each axis:", scaling_factors)
+    scaling_matrix = np.diag(scaling_factors + [1])
+
+    aabb.color = (1, 0, 0)
+    cube_cloud.paint_uniform_color([0, 1, 0]) 
+    o3d.visualization.draw_geometries([cube_cloud, aabb])
+    return scaling_matrix
 
 
 if __name__ == '__main__':
     panorama_path = '/home/g/gajdosech2/image-stitching-supeglue/rgb_panorama.jpg'
-    mask_path = '/home/g/gajdosech2/image-stitching-supeglue/mask_0.png'
+    mask_path = '/home/g/gajdosech2/image-stitching-supeglue/masks/cube_0.png'
     log_file_path = '/home/g/gajdosech2/image-stitching-supeglue/panorama_pixel_log.json'
     depths_folder = '/home/g/gajdosech2/image-stitching-supeglue/depths/'
 
@@ -73,12 +93,16 @@ if __name__ == '__main__':
             rgb_value = np.sum(masked_panorama[y, x])
             if rgb_value:
                 log_index = y * PANORAMA_WIDTH + x
-                image_x = int(log_data[log_index]['image_x'])
-                image_y = int(log_data[log_index]['image_y'])
-                image_pixels[image_y, image_x] = 1
+                if (log_data[log_index]['filename'] == log_entry['filename']):
+                    image_x = int(log_data[log_index]['image_x'])
+                    image_y = int(log_data[log_index]['image_y'])
+                    image_pixels[image_y, image_x] = 1
 
     cv2.imwrite(OUT_WORK_DIR + 'image_pixels.jpg', image_pixels * 255)
 
-    depth_path = f'{depths_folder}/{log_entry['filename']}'
+    depth_path = f"{depths_folder}/{log_entry['filename']}"
 
-    process_depth_and_create_pointcloud(depth_path, image_pixels)
+    point_cloud = process_depth_and_create_pointcloud(depth_path, image_pixels)
+    scaling_matrix = fit_cuboid(point_cloud)
+
+    process_depth_and_create_pointcloud(depth_path, np.ones((IMG_HEIGHT, IMG_WIDTH), dtype=np.uint8), scaling_matrix)
