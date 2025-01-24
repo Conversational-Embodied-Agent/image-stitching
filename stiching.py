@@ -13,16 +13,16 @@ from depth_anything_v2.dpt import DepthAnythingV2
 IMG_WIDTH = 640
 IMG_HEIGHT = 480
 PANORAMA_WIDTH = 1700
-PANORAMA_HEIGHT = 700
+PANORAMA_HEIGHT = 800
 
 LEFT_YAW = -60
 RIGHT_YAW = 60
-BOTTOM_PITCH = 0
-TOP_PITCH = 40
+BOTTOM_PITCH = -20
+TOP_PITCH = 20
 
 PIXEL_LOG_FILE = 'panorama_pixel_log.json'
 YOLO_PATH = '/home/g/gajdosech2/image-stitching-supeglue/yolov8l-worldv2.pt'
-DE_PATH = '/home/g/gajdosech2/Depth-Anything-V2/checkpoints/depth_anything_v2_metric_hypersim_vitl.pth'
+DE_PATH = '/home/g/gajdosech2/Depth-Anything-V2/checkpoints/depth_anything_v2_metric_hypersim_vits.pth'
 SAM_PATH = '/home/g/gajdosech2/image-stitching-supeglue/sam2.1_l.pt'
 DEPTHS_OUT_WORK_DIR = 'depths/'
 MASKS_OUT_WORK_DIR = 'masks/'
@@ -72,6 +72,38 @@ def place_image_on_panorama(panorama, image, x_start, y_start, log_array, image_
             log_index = y * PANORAMA_WIDTH + x
             log_array[log_index] = {'filename': image_filename, 'timestamp': timestamp, 'image_x': x - x_start, 'image_y': y - y_start}
 
+
+def yolo_sam(rgb_panorama):
+    yolo_world = YOLO(YOLO_PATH) 
+    yolo_world.set_classes(['person'])
+    print("\nYOLOWorld Prediction")
+    classes = yolo_world.predict(rgb_panorama, conf=0.6)[0]
+    classes.save(PANORAMAS_OUT_WORK_DIR + 'person_detection.jpg')
+
+    if (len(classes.boxes)):
+        sam = SAM(SAM_PATH)
+        print("\nSAM Prediction")
+        masks = sam(rgb_panorama, bboxes=classes.boxes.xyxy.detach().cpu().numpy())[0]
+
+        for i, mask in enumerate(masks.masks.data.detach().cpu().numpy()):
+            cv2.imwrite(MASKS_OUT_WORK_DIR + f'mask_{i}.png', mask.astype(np.uint8) * 255)
+
+    yolo_world = YOLO(YOLO_PATH) 
+    yolo_world.set_classes(['blue cube'])
+    print("\nYOLOWorld Prediction")
+    classes = yolo_world.predict(rgb_panorama, conf=0.0005)[0]
+    classes.save(PANORAMAS_OUT_WORK_DIR + 'cube_detection.jpg')
+
+    if (len(classes.boxes)):
+        sam = SAM(SAM_PATH)
+        print("\nSAM Prediction")
+        masks = sam(rgb_panorama, bboxes=classes.boxes.xyxy.detach().cpu().numpy())[0]
+
+        for i, mask in enumerate(masks.masks.data.detach().cpu().numpy()):
+            cv2.imwrite(MASKS_OUT_WORK_DIR + f'cube_{i}.png', mask.astype(np.uint8) * 255)
+
+
+
 def stitch_panorama(images_folder, data_log_path, angles_log_path, M):
     image_data = load_data_log(data_log_path)
     angles_data = load_angles_log(angles_log_path)
@@ -87,11 +119,14 @@ def stitch_panorama(images_folder, data_log_path, angles_log_path, M):
         'vitg': {'encoder': 'vitg', 'features': 384, 'out_channels': [1536, 1536, 1536, 1536]}
     }
 
-    depth_anything = DepthAnythingV2(**{**model_configs['vitl'], 'max_depth': 20})
+    depth_anything = DepthAnythingV2(**{**model_configs['vits'], 'max_depth': 20})
     depth_anything.load_state_dict(torch.load(DE_PATH, map_location='cpu'))
     depth_anything = depth_anything.to('cuda').eval()
 
-    for i in range(0, len(image_data), M):
+    sequence_length = len(image_data)
+    # sequence_length = 30
+
+    for i in range(0, sequence_length, M):
         image_info = image_data[i]
         timestamp = image_info['timestamp']
         filename = image_info['filename'].replace('.ppm', '.jpg')
@@ -120,26 +155,15 @@ def stitch_panorama(images_folder, data_log_path, angles_log_path, M):
     cv2.imwrite(PANORAMAS_OUT_WORK_DIR + 'rgb_panorama.jpg', rgb_panorama)
     cv2.imwrite(PANORAMAS_OUT_WORK_DIR + 'depth_panorama.jpg', depth_panorama)
 
-    yolo_world = YOLO(YOLO_PATH) 
-    yolo_world.set_classes(['person'])
-    print("\nYOLOWorld Prediction")
-    classes = yolo_world.predict(rgb_panorama, conf=0.6)[0]
-    classes.save(PANORAMAS_OUT_WORK_DIR + 'person_detection.jpg')
-
-    sam = SAM(SAM_PATH)
-    print("\nSAM Prediction")
-    masks = sam(rgb_panorama, bboxes=classes.boxes.xyxy.detach().cpu().numpy())[0]
-
-    for i, mask in enumerate(masks.masks.data.detach().cpu().numpy()):
-        cv2.imwrite(MASKS_OUT_WORK_DIR + f'mask_{i}.png', mask.astype(np.uint8) * 255)
-
+    yolo_sam(rgb_panorama)
+   
     with open(PIXEL_LOG_FILE, 'w') as log_file:
         json.dump(log_array, log_file)
 
 
 if __name__ == '__main__':
-    images_folder = '/home/g/gajdosech2/datasets/icup/UKBA/leftCamera/'
-    data_log_path = '/home/g/gajdosech2/datasets/icup/UKBA/leftCamera/data.log'
-    angles_log_path = '/home/g/gajdosech2/datasets/icup/UKBA/neckAngles/data.log'
+    images_folder = '/home/g/gajdosech2/datasets/icup/CUBES/leftCam/'
+    data_log_path = '/home/g/gajdosech2/datasets/icup/CUBES/leftCamppm/data.log'
+    angles_log_path = '/home/g/gajdosech2/datasets/icup/CUBES/neckAngles/data.log'
     M = 30
     stitch_panorama(images_folder, data_log_path, angles_log_path, M)
