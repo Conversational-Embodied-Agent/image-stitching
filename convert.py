@@ -20,8 +20,8 @@ def batch_convert_ppm_to_jpg(input_folder, output_folder, nth_image):
 
 
 if __name__ == '__main__':
-    input_folder = '/home/g/gajdosech2/icup/sequence3ppm'
-    output_folder = '/home/g/gajdosech2/icup/sequence3'
+    input_folder = '/home/g/gajdosech2/datasets/icup/DETAIL/rightCamppm'
+    output_folder = '/home/g/gajdosech2/datasets/icup/DETAIL/rightCam'
     # Specify the nth image to convert (e.g., every 3rd image)
     M = 1
     batch_convert_ppm_to_jpg(input_folder, output_folder, M)
