@@ -20,7 +20,7 @@ CX = 320.0
 CY = 240.0 
 TOP_PERCENTAGE = 25 
 
-DE_PATH = '/home/g/gajdosech2/Depth-Anything-V2/checkpoints/depth_anything_v2_metric_hypersim_vitl.pth'
+DE_PATH = '/home/g/gajdosech2/Depth-Anything-V2/checkpoints/depth_anything_v2_metric_hypersim_vits.pth'
 
 
 def find_valls(images_folder, data_log_path, angles_log_path, wall_log_file, M=1):
@@ -38,7 +38,7 @@ def find_valls(images_folder, data_log_path, angles_log_path, wall_log_file, M=1
         'vitg': {'encoder': 'vitg', 'features': 384, 'out_channels': [1536, 1536, 1536, 1536]}
     }
 
-    depth_anything = DepthAnythingV2(**{**model_configs['vitl'], 'max_depth': 20})
+    depth_anything = DepthAnythingV2(**{**model_configs['vits'], 'max_depth': 20})
     depth_anything.load_state_dict(torch.load(DE_PATH, map_location='cpu'))
     depth_anything = depth_anything.to('cuda').eval()
 
@@ -92,8 +92,8 @@ def find_valls(images_folder, data_log_path, angles_log_path, wall_log_file, M=1
 
         depth_debug = (depth - 0.0) / (20.0 - 0.0) * 255.0
         depth_debug = depth_debug.astype(np.uint8)
-        cv2.imwrite("/home/g/gajdosech2/image-stitching-supeglue/masked_depths/depth_" + str(w) + filename, depth_debug)
-        cv2.imwrite("/home/g/gajdosech2/image-stitching-supeglue/masked_depths/rgb_" + str(w) + filename, image)
+        cv2.imwrite("/home/g/gajdosech2/image-stitching-supeglue/output/masked/depth_" + str(w) + filename, depth_debug)
+        cv2.imwrite("/home/g/gajdosech2/image-stitching-supeglue/output/masked/rgb_" + str(w) + filename, image)
 
         depth = np.repeat(depth[..., np.newaxis], 3, axis=-1)
 
@@ -113,8 +113,8 @@ def find_valls(images_folder, data_log_path, angles_log_path, wall_log_file, M=1
 
 
 if __name__ == '__main__':
-    images_folder = '/home/g/gajdosech2/datasets/icup/UKBA/leftCamera/'
-    data_log_path = '/home/g/gajdosech2/datasets/icup/UKBA/leftCamera/data.log'
-    angles_log_path = '/home/g/gajdosech2/datasets/icup/UKBA/neckAngles/data.log'
-    wall_log_file = '/home/g/gajdosech2/image-stitching-supeglue/wall_pixels.json'
+    images_folder = '/home/g/gajdosech2/datasets/icup/CUBES/leftCam/'
+    data_log_path = '/home/g/gajdosech2/datasets/icup/CUBES/leftCamppm/data.log'
+    angles_log_path = '/home/g/gajdosech2/datasets/icup/CUBES/neckAngles/data.log'
+    wall_log_file = '/home/g/gajdosech2/image-stitching-supeglue/wall_pixels_3.json'
     find_valls(images_folder, data_log_path, angles_log_path, wall_log_file)
