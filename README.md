@@ -7,7 +7,7 @@ In a real-time deployment, they will be reworked to input/output images and othe
 Description of individual script files:
 
 - `convert.py`: conversion from *.ppm* image files to *.jpg* with compression (PROBABLY USELESS IN ACTUAL DEPLOYMENT)
-- `segmentation.py`: example for Laxmi on how to retrieve person coordinates from a 2D binary segmentation masks and depth maps, plus how to rescale the axes of the point cloud (PROBABLY USELESS IN ACTUAL DEPLOYMENT)
+- `segmentation.py`: example for Laxmi on how to retrieve person coordinates from a 2D binary segmentation masks and depth maps, plus how to rescale the axes of the point cloud 
 - `ulils.py`: common function used by both `stiching.py` and `walls.py`
 - `walls.py`: script for automatic detection of distances of 3 surrounding walls (left, front, right), designed to be run once after placing a robot into a new environment
 - `stichingy.py`: main script, which takes a sequence of RGB frames from the robot and creates a panorama, depth frames, and segmentation masks for people.
