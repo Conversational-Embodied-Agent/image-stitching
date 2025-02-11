@@ -113,7 +113,7 @@ def stitch_panorama(images_folder, data_log_path, angles_log_path, M):
 
     rgb_panorama = np.zeros((PANORAMA_HEIGHT, PANORAMA_WIDTH, 3), dtype=np.uint8)
     depth_panorama = np.zeros((PANORAMA_HEIGHT, PANORAMA_WIDTH, 3), dtype=np.uint8) 
-    log_array = [{'filename': None, 'timestamp': None, 'image_x': None, 'image_y': None} for _ in range(PANORAMA_WIDTH * PANORAMA_HEIGHT)]
+    log_array = [{'filename': None, 'timestamp': None, 'image_x': None, 'image_y': None, 'neck_yaw': None, 'neck_pitch': None} for _ in range(PANORAMA_WIDTH * PANORAMA_HEIGHT)]
 
     model_configs = {
         'vits': {'encoder': 'vits', 'features': 64, 'out_channels': [48, 96, 192, 384]},
@@ -127,8 +127,6 @@ def stitch_panorama(images_folder, data_log_path, angles_log_path, M):
     depth_anything = depth_anything.to('cuda').eval()
 
     sequence_length = len(image_data)
-    # sequence_length = 30
-
     for i in range(0, sequence_length, M):
         image_info = image_data[i]
         timestamp = image_info['timestamp']
@@ -170,5 +168,5 @@ if __name__ == '__main__':
     images_folder = '/home/g/gajdosech2/datasets/icup/CUBES/leftCam/'
     data_log_path = '/home/g/gajdosech2/datasets/icup/CUBES/leftCamppm/data.log'
     angles_log_path = '/home/g/gajdosech2/datasets/icup/CUBES/neckAngles/data.log'
-    M = 60
+    M = 90
     stitch_panorama(images_folder, data_log_path, angles_log_path, M)
